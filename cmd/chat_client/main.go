@@ -1,16 +1,16 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"io"
 	"log"
 	"net"
-	"io"
-	"fmt"
 	"sync"
-	"bufio"
 )
 
 type Message struct {
-	Name string
+	Name    string
 	Message string
 }
 
@@ -74,23 +74,22 @@ func (r *Reader) Read() (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		return Message{Name: name[:len(name) - 1], Message: message[:len(message) - 1]}, nil
+		return Message{Name: name[:len(name)-1], Message: message[:len(message)-1]}, nil
 	case "N":
 		name, err := r.reader.ReadString('\n')
 		if err != nil {
 			return nil, err
 		}
-		return Name{Name: name[:len(name) - 1]}, nil
+		return Name{Name: name[:len(name)-1]}, nil
 	case "S":
 		message, err := r.reader.ReadString('\n')
 		if err != nil {
 			return nil, err
 		}
-		return Send{Message: message[:len(message) - 1]}, nil
+		return Send{Message: message[:len(message)-1]}, nil
 	default:
 		return nil, fmt.Errorf("Unknown command")
 	}
-	return nil, nil
 }
 
 func (r *Reader) ReadAll() ([]interface{}, error) {
@@ -108,7 +107,6 @@ func (r *Reader) ReadAll() ([]interface{}, error) {
 	return commands, nil
 }
 
-
 type Server interface {
 	Listen(address string) error
 	Close()
@@ -118,14 +116,14 @@ type Server interface {
 
 type TcpServer struct {
 	listener net.Listener
-	clients []*internalClient
-	mutex *sync.Mutex
+	mutex    *sync.Mutex
+	clients  []*internalClient
 }
 
 type internalClient struct {
-	conn net.Conn
-	name string
+	conn   net.Conn
 	writer *Writer
+	name   string
 }
 
 func (s *TcpServer) Listen(address string) error {
@@ -152,12 +150,12 @@ func (s *TcpServer) Accept(conn net.Conn) *internalClient {
 	return client
 }
 
-func (s* TcpServer) Remove(client *internalClient) {
+func (s *TcpServer) Remove(client *internalClient) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	for i, c := range s.clients {
 		if c == client {
-			s.clients = append(s.clients[:i], s.clients[i + 1:]...)
+			s.clients = append(s.clients[:i], s.clients[i+1:]...)
 			break
 		}
 	}
@@ -165,7 +163,7 @@ func (s* TcpServer) Remove(client *internalClient) {
 	client.conn.Close()
 }
 
-func (s* TcpServer) Bind() {
+func (s *TcpServer) Bind() {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
@@ -177,7 +175,7 @@ func (s* TcpServer) Bind() {
 	}
 }
 
-func (s* TcpServer) handle(client *internalClient) {
+func (s *TcpServer) handle(client *internalClient) {
 	reader := NewReader(client.conn)
 	for {
 		command, err := reader.Read()
@@ -201,7 +199,7 @@ func (s* TcpServer) handle(client *internalClient) {
 	}
 }
 
-func (s* TcpServer) Broadcast(data interface{}) error {
+func (s *TcpServer) Broadcast(data interface{}) error {
 	for _, client := range s.clients {
 		client.writer.Write(data)
 	}
